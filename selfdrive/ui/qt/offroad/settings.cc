@@ -172,7 +172,7 @@ DevicePanel::DevicePanel(QWidget* parent) : QWidget(parent) {
   power_layout->setSpacing(30);
 
   QPushButton *reboot_btn = new QPushButton("Reboot");
-  reboot_btn->setStyleSheet("height: 120px;border-radius: 15px;background-color: #393939;");
+  reboot_btn->setStyleSheet("height: 120px;border-radius: 15px; background-color: #393939;");
   power_layout->addWidget(reboot_btn);
   QObject::connect(reboot_btn, &QPushButton::released, [=]() {
     if (ConfirmationDialog::confirm("Are you sure you want to reboot?", this)) {
@@ -181,7 +181,7 @@ DevicePanel::DevicePanel(QWidget* parent) : QWidget(parent) {
   });
 
   QPushButton *poweroff_btn = new QPushButton("Power Off");
-  poweroff_btn->setStyleSheet("height: 120px;border-radius: 15px;background-color: #E22C2C;");
+  poweroff_btn->setStyleSheet("height: 120px;border-radius: 15px; background-color: #E22C2C;");
   power_layout->addWidget(poweroff_btn);
   QObject::connect(poweroff_btn, &QPushButton::released, [=]() {
     if (ConfirmationDialog::confirm("Are you sure you want to power off?", this)) {
@@ -284,11 +284,8 @@ QWidget * network_panel(QWidget * parent) {
 }
 
 void SettingsWindow::showEvent(QShowEvent *event) {
-  if (layout()) {
-    panel_widget->setCurrentIndex(0);
-    nav_btns->buttons()[0]->setChecked(true);
-    return;
-  }
+  panel_widget->setCurrentIndex(0);
+  nav_btns->buttons()[0]->setChecked(true);
 }
 
 SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
@@ -367,6 +364,7 @@ SettingsWindow::SettingsWindow(QWidget *parent) : QFrame(parent) {
     panel_widget->addWidget(panel_frame);
 
     QObject::connect(btn, &QPushButton::released, [=, w = panel_frame]() {
+      btn->setChecked(true);
       panel_widget->setCurrentWidget(w);
     });
   }
