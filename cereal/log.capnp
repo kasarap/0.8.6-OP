@@ -811,6 +811,11 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   accels @32 :List(Float32);
   speeds @33 :List(Float32);
 
+  # desired speed/accel/jerk over next 2.5s
+  accels @32 :List(Float32);
+  speeds @33 :List(Float32);
+  jerks @34 :List(Float32);
+
   enum LongitudinalPlanSource {
     cruise @0;
     lead0 @1;
