@@ -35,8 +35,8 @@ class CarController():
     self.params = CarControllerParams()
 
     self.packer_pt = CANPacker(DBC[CP.carFingerprint]['pt'])
-    #self.packer_obj = CANPacker(DBC[CP.carFingerprint]['radar'])
-    #self.packer_ch = CANPacker(DBC[CP.carFingerprint]['chassis'])
+    self.packer_obj = CANPacker(DBC[CP.carFingerprint]['radar'])
+    self.packer_ch = CANPacker(DBC[CP.carFingerprint]['chassis'])
 
   def update(self, enabled, CS, frame, actuators,
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
@@ -84,9 +84,9 @@ class CarController():
       can_sends.append(gmcan.create_gas_regen_command(self.packer_pt, CanBus.POWERTRAIN, apply_gas, idx, enabled, at_full_stop))
 
     # Send dashboard UI commands (ACC status), 25hz
-    #if (frame % 4) == 0:
-    #  send_fcw = hud_alert == VisualAlert.fcw
-    #  can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, enabled, hud_v_cruise * CV.MS_TO_KPH, hud_show_car, send_fcw))
+    if (frame % 4) == 0:
+      send_fcw = hud_alert == VisualAlert.fcw
+      can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, enabled, hud_v_cruise * CV.MS_TO_KPH, hud_show_car, send_fcw))
 
     # Radar needs to know current speed and yaw rate (50hz)
     # and that ADAS is alive (10hz)
