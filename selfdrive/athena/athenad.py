@@ -209,6 +209,14 @@ def cancelUpload(upload_id):
   return {"success": 1}
 
 
+@dispatcher.add_method
+def primeActivated(activated):
+  dongle_id = Params().get("DongleId", encoding='utf-8')
+  api = Api(dongle_id)
+  manage_tokens(api)
+  return {"success": 1}
+
+
 def startLocalProxy(global_end_event, remote_ws_uri, local_port):
   try:
     if local_port not in LOCAL_PORT_WHITELIST:
@@ -303,9 +311,8 @@ def get_logs_to_send_sorted():
     # assume send failed and we lost the response if sent more than one hour ago
     if not time_sent or curr_time - time_sent > 3600:
       logs.append(log_entry)
-  # return logs in order they should be sent
   # excluding most recent (active) log file
-  return sorted(logs[:-1])
+  return sorted(logs)[:-1]
 
 
 def log_handler(end_event):
@@ -324,7 +331,7 @@ def log_handler(end_event):
       # send one log
       curr_log = None
       if len(log_files) > 0:
-        log_entry = log_files.pop()
+        log_entry = log_files.pop() # newest log file
         cloudlog.debug(f"athena.log_handler.forward_request {log_entry}")
         try:
           curr_time = int(time.time())
