@@ -61,23 +61,27 @@ class CarController():
 
       can_sends.append(gmcan.create_steering_control(self.packer_pt, CanBus.POWERTRAIN, apply_steer, idx, lkas_enabled))
 
-    # Pedal/Regen
-    if CS.CP.enableGasInterceptor and (frame % 2) == 0:
+    # GAS/BRAKE
+    # no output if not enabled, but keep sending keepalive messages
+    # treat pedals as one
+    final_pedal = actuators.gas - actuators.brake
 
-      if not enabled or not CS.adaptive_Cruise:
-        final_pedal = 0
-      elif CS.adaptive_Cruise:
-        min_pedal_speed = interp(CS.out.vEgo, VEL, MIN_PEDAL)
-        pedal = clip(actuators.gas, min_pedal_speed, 1.)
-        regen = actuators.brake
-        pedal, self.accel_steady = accel_hysteresis(pedal, self.accel_steady)
-        final_pedal = clip(pedal - regen, 0., 1.)
-        if regen > 0.1:
-          can_sends.append(gmcan.create_regen_paddle_command(self.packer_pt, CanBus.POWERTRAIN))
+    if not enabled:
+      # Stock ECU sends max regen when not enabled.
+      apply_gas = P.MAX_ACC_REGEN
+      apply_brake = 0
+    else:
+      apply_gas = int(round(interp(final_pedal, P.GAS_LOOKUP_BP, P.GAS_LOOKUP_V)))
+      apply_brake = int(round(interp(final_pedal, P.BRAKE_LOOKUP_BP, P.BRAKE_LOOKUP_V)))
 
-      idx = (frame // 2) % 4
-      can_sends.append(create_gas_command(self.packer_pt, final_pedal, idx))
-      #self.apply_pedal_last = final_pedal
+    # Gas/regen and brakes - all at 25Hz
+    if (frame % 4) == 0:
+      idx = (frame // 4) % 4
+
+      at_full_stop = enabled and CS.out.standstill
+      near_stop = enabled and (CS.out.vEgo < P.NEAR_STOP_BRAKE_PHASE)
+      can_sends.append(gmcan.create_friction_brake_command(self.packer_ch, CanBus.CHASSIS, apply_brake, idx, near_stop, at_full_stop))
+      can_sends.append(gmcan.create_gas_regen_command(self.packer_pt, CanBus.POWERTRAIN, apply_gas, idx, enabled, at_full_stop))
 
     # Send dashboard UI commands (ACC status), 25hz
     #if (frame % 4) == 0:
