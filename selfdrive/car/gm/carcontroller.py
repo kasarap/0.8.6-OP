@@ -1,27 +1,14 @@
 from cereal import car
 from common.realtime import DT_CTRL
-from common.numpy_fast import interp, clip
+from common.numpy_fast import interp
 from selfdrive.config import Conversions as CV
-from selfdrive.car import apply_std_steer_torque_limits, create_gas_command
+from selfdrive.car import apply_std_steer_torque_limits
 from selfdrive.car.gm import gmcan
 from selfdrive.car.gm.values import DBC, CanBus, CarControllerParams
 from opendbc.can.packer import CANPacker
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
-VEL = [15., 25.]  # velocities
-MIN_PEDAL = [0.05, 0.1]
-
-def accel_hysteresis(accel, accel_steady):
-
-  # for small accel oscillations less than 0.02, don't change the accel command
-  if accel > accel_steady + 0.02:
-    accel_steady = accel - 0.02
-  elif accel < accel_steady - 0.02:
-    accel_steady = accel + 0.02
-  accel = accel_steady
-
-  return accel, accel_steady
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
@@ -29,8 +16,6 @@ class CarController():
     self.apply_steer_last = 0
     self.lka_icon_status_last = (False, False)
     self.steer_rate_limited = False
-    self.accel_steady = 0.
-    #self.apply_pedal_last = 0.
 
     self.params = CarControllerParams()
 
@@ -47,7 +32,7 @@ class CarController():
     can_sends = []
 
     # STEER
-    lkas_enabled = enabled and not (CS.out.steerWarning or CS.out.steerError) and CS.out.vEgo > P.MIN_STEER_SPEED
+    lkas_enabled = enabled and not CS.out.steerWarning and CS.out.vEgo > P.MIN_STEER_SPEED
     if (frame % P.STEER_STEP) == 0:
       if lkas_enabled:
         new_steer = int(round(actuators.steer * P.STEER_MAX))
@@ -88,7 +73,7 @@ class CarController():
       send_fcw = hud_alert == VisualAlert.fcw
       can_sends.append(gmcan.create_acc_dashboard_command(self.packer_pt, CanBus.POWERTRAIN, enabled, hud_v_cruise * CV.MS_TO_KPH, hud_show_car, send_fcw))
 
-    # Radar needs to know current speed and yaw rate (50hz)
+    # Radar needs to know current speed and yaw rate (50hz),
     # and that ADAS is alive (10hz)
     time_and_headlights_step = 10
     tt = frame * DT_CTRL
@@ -115,7 +100,7 @@ class CarController():
     lka_critical = lka_active and abs(actuators.steer) > 0.9
     lka_icon_status = (lka_active, lka_critical)
     if frame % P.CAMERA_KEEPALIVE_STEP == 0 or lka_icon_status != self.lka_icon_status_last:
-      steer_alert = hud_alert in [VisualAlert.steerRequired, VisualAlert.ldw]
+      steer_alert = hud_alert == VisualAlert.steerRequired
       can_sends.append(gmcan.create_lka_icon_command(CanBus.SW_GMLAN, lka_active, lka_critical, steer_alert))
       self.lka_icon_status_last = lka_icon_status
 
